@@ -49,7 +49,10 @@ def get_data():
     if SAVEFILE.exists():
         print("There is already a save file, loading that")
         return pd.read_csv(SAVEFILE)
-    return subset_data()
+    df = subset_data()
+    df["scrape_status"] = "Not Started"
+    df["homepage_content"] = None
+    return df
 
 
 async def enrich_homepage_scrapes():
@@ -59,9 +62,6 @@ async def enrich_homepage_scrapes():
     df = get_data()
 
     print("Data loaded")
-
-    df["scrape_status"] = "Not Started"
-    df["homepage_content"] = None
 
     async def scrape_homepage(i, url):
         if df.loc[i, "scrape_status"] in ["Failed", "Success"]:
