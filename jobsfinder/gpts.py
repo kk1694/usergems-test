@@ -261,7 +261,10 @@ async def follow_links(base_url: str, next_link: str, history: list[str]):
 
     print("Starting next link", _next_link)
 
-    if _next_link in history:
+    # this was the buggy! don't have time to reprocess everything unfortunately
+    if history and _next_link in history[1:]:
+        print(history)
+        print(_next_link)
         return {
             "status": "Loop detected",
             "history": history,
@@ -349,5 +352,8 @@ Respond with the following output:
 - best_roles: the two best roles, if none, leave empty
 - email_line: the email line. If none, leave null
 """
+
+    if type(content) is list:
+        content = "\n".join(content)
 
     return await simple_gpt(_system_msg, content, SalesRoles)
