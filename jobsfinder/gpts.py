@@ -3,6 +3,7 @@ File for all the GPT calls. Will also add the unit tests here for simplicity.
 """
 
 import json
+import re
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -10,7 +11,7 @@ import pandas as pd
 import pytest
 from pydantic import BaseModel
 
-from .core import TEMP_DIR, limit_parallel, simple_gpt
+from .core import TEMP_DIR, html2md, limit_parallel, scrape_url, simple_gpt
 from .testcases import (
     jobs_links,
     jobs_list,
@@ -24,6 +25,9 @@ from .testcases import (
 pytest_plugins = ("pytest_asyncio",)
 
 
+FOLLOW_DEPTH = 3
+
+
 class WebsiteClassification(BaseModel):
     reasoning: str
     classification: Literal["invalid", "valid"]
@@ -33,6 +37,7 @@ class JobsClassification(BaseModel):
     reasoning: str
     classification: Literal["Job list", "Job open apply", "Link to jobs", "No jobs"]
     link: Optional[str] = None
+    titles: Optional[list[str]] = None
 
 
 async def valid_website(content) -> WebsiteClassification:
@@ -119,6 +124,8 @@ Note:
 
 If the answer is link to jobs, please provide the link in the output. Leave it empty for any other case.
 
+If the answer is job list, please provide the list of job titles. Leave it empty for any other case.
+
 Examples:
 - "While FitLife has no current openings, we're always looking for talented fitness professionals. Please check back soon" -> Empty list
 - "    StreamIt - Unlimited Movies and TV Shows. Enjoy the latest movies and shows without ads. Start streaming today!" -> No jobs
@@ -143,6 +150,7 @@ TravelPro is an award-winning travel agency offering luxury vacations and person
     return await simple_gpt(_system_msg, content, JobsClassification)
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_jobs_list():
     results = await quickcases(jobs_status, jobs_list)
@@ -150,6 +158,7 @@ async def test_jobs_list():
     assert not failed, f"Failed cases: {failed}"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_jobs_none():
     results = await quickcases(jobs_status, jobs_none)
@@ -157,6 +166,7 @@ async def test_jobs_none():
     assert not failed, f"Failed cases: {failed}"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_jobs_links():
     results = await quickcases(jobs_status, jobs_links)
@@ -168,6 +178,7 @@ async def test_jobs_links():
 
 # Note: these last 2 test cases get constantly confused, but don't have time to fiddle right now, so will just ignore
 # Probably best solution: merge these and add extra step
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_jobs_open_apply():
     results = await quickcases(jobs_status, jobs_open_apply)
@@ -179,6 +190,7 @@ async def test_jobs_open_apply():
     assert not failed, f"Failed cases: {failed}"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_jobs_zero():
     results = await quickcases(jobs_status, jobs_zero)
@@ -188,3 +200,89 @@ async def test_jobs_zero():
         if result not in ["No jobs", "Job open apply"]
     ]
     assert not failed, f"Failed cases: {failed}"
+
+
+def _strip_leading_dots(x: str) -> str:
+    return x.lstrip(".")
+
+
+def test__strip_leading_dots():
+    assert _strip_leading_dots("...hello") == "hello"
+    assert _strip_leading_dots("hello") == "hello"
+    assert _strip_leading_dots(".") == ""
+
+
+def prep_link(base_url: str, link: str) -> str:
+    if base_url.endswith("/"):
+        base_url = base_url.rstrip("/")
+
+    link = _strip_leading_dots(link)
+    if link.startswith("http"):
+        return link
+
+    link = re.sub(r"^\.*\/?", "", link)
+
+    return f"{base_url}/{link}"
+
+
+def test_prep_link():
+    assert prep_link("https://example.com", "/jobs") == "https://example.com/jobs"
+    assert prep_link("https://example.com", "jobs") == "https://example.com/jobs"
+    assert (
+        prep_link("https://example.com", "https://example.com/jobs")
+        == "https://example.com/jobs"
+    )
+    assert (
+        prep_link("https://example.com", "https://example.com/jobs")
+        == "https://example.com/jobs"
+    )
+    assert prep_link("https://example.com", ".../jobs") == "https://example.com/jobs"
+    assert prep_link("https://example.com", "...jobs") == "https://example.com/jobs"
+    assert prep_link("https://example.com", ".../jobs") == "https://example.com/jobs"
+    assert prep_link("https://example.com", "...jobs") == "https://example.com/jobs"
+
+
+async def follow_links(base_url: str, next_link: str, history: list[str]):
+    if len(history) > FOLLOW_DEPTH + 1:
+        return {
+            "status": "Max depth reached",
+            "history": history,
+            "titles": [],
+            "error": None,
+        }
+
+    _next_link = prep_link(base_url, next_link)
+
+    print("Starting next link", _next_link)
+
+    try:
+        print("Scraping page")
+        content = await scrape_url(_next_link)
+        print("converting to md")
+        md = html2md(content)
+
+        if not md:
+            return {
+                "status": "No content",
+                "history": history,
+                "titles": [],
+                "error": None,
+            }
+
+        print("judging website status")
+        status = await jobs_status(md)
+
+        print("Status", status)
+
+        if status.classification == "Link to jobs":
+            return await follow_links(base_url, status.link, history + [status.link])
+
+        return {
+            "status": status.classification,
+            "titles": status.titles,
+            "history": history,
+            "error": None,
+        }
+    except Exception as e:
+        print(e)
+        return {"status": "Error", "history": history, "error": str(e), "titles": []}
