@@ -1,9 +1,10 @@
 import asyncio
+import json
 
 import pandas as pd
 
 from jobsfinder.core import DATA_DIR, limit_parallel
-from jobsfinder.gpts import follow_links
+from jobsfinder.gpts import follow_scrape
 
 INPUTFILE = DATA_DIR / "03_valid_website.csv"
 SAVEFILE = DATA_DIR / "04_jobs.csv"
@@ -28,23 +29,26 @@ async def enrich_md():
 
     print("Data loaded")
 
-    async def _get_jobs(i, url, _valid):
+    async def _get_jobs(i, url, md, _valid):
         if _valid == "invalid":
             return
 
-        res = await follow_links(url, url, [])
+        if df.loc[i, "status"] is not None:
+            return
 
-        df.loc[i, "history"] = res.history
-        df.loc[i, "status"] = res.status
-        df.loc[i, "error"] = res.error
-        df.loc[i, "jobs"] = res.jobs
+        res = await follow_scrape(url, md)
+
+        df.loc[i, "history"] = json.dumps(res["history"])
+        df.loc[i, "status"] = res["status"]
+        df.loc[i, "error"] = res["error"]
+        df.loc[i, "jobs"] = json.dumps(res["titles"])
 
         if i % 5 == 0:
             df.to_csv(SAVEFILE, index=False)
 
     await limit_parallel(
         [
-            _get_jobs(i, row["Website"], row["valid_website"])
+            _get_jobs(i, row["Website"], row["md"], row["valid_website"])
             for i, row in df.iterrows()
         ],
         n=25,

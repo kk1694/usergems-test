@@ -255,6 +255,14 @@ async def follow_links(base_url: str, next_link: str, history: list[str]):
 
     print("Starting next link", _next_link)
 
+    if _next_link in history:
+        return {
+            "status": "Loop detected",
+            "history": history,
+            "titles": [],
+            "error": None,
+        }
+
     try:
         print("Scraping page")
         content = await scrape_url(_next_link)
@@ -286,3 +294,32 @@ async def follow_links(base_url: str, next_link: str, history: list[str]):
     except Exception as e:
         print(e)
         return {"status": "Error", "history": history, "error": str(e), "titles": []}
+
+
+# this is just to skip the first scrape, we've already done that
+async def follow_scrape(base_url: str, md):
+    try:
+        if not md:
+            return {
+                "status": "No content",
+                "history": [base_url],
+                "titles": [],
+                "error": None,
+            }
+
+        print("judging website status")
+        status = await jobs_status(md)
+
+        print("Status", status)
+
+        if status.classification == "Link to jobs":
+            return await follow_links(base_url, status.link, [base_url, status.link])
+
+        return {
+            "status": status.classification,
+            "titles": status.titles,
+            "history": [base_url],
+            "error": None,
+        }
+    except Exception as e:
+        return {"status": "Error", "history": [base_url], "error": str(e), "titles": []}
