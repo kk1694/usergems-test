@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 import tqdm.asyncio
+from openai import AsyncClient
 from playwright.async_api import async_playwright
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -32,15 +33,49 @@ async def scrape_url(url):
     """
     This can be more advanced, but for now, it will do
     """
+
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page()
-            await page.wait_for_load_state()
+
             await page.goto(url)
+
+            await page.wait_for_load_state(timeout=20000)
+            await page.keyboard.press("PageDown")
+            await page.wait_for_load_state(timeout=20000)
+
+            await page.evaluate("() => document.location.href")
+            await page.wait_for_load_state(timeout=20000)
+
             content = await page.content()
             await browser.close()
             return content
     except Exception as e:
         print(e)
         return None
+
+
+def _init_openai() -> AsyncClient:
+    return AsyncClient
+
+
+async def simple_gpt(system_msg, user_msg, schema, temperature=0):
+    client = _init_openai()
+    for i in range(5):
+        try:
+            completion = await client.beta.chat.completions.parse(
+                model="gpt-4o-mini-2024-07-18",
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                response_format=schema,
+                temperature=temperature,
+            )
+            print(completion.usage.total_tokens)
+            return completion.choices[0].message.parsed
+        except Exception as err:
+            print(err)
+            await asyncio.sleep(20)
+    raise ValueError("5 iterations did not succeed!")
