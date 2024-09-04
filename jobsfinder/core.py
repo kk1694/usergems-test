@@ -158,3 +158,4 @@ def limit_string(x: str, n=100) -> str:
         raise ValueError("n must be at least 3")
     if len(x) > n:
         return x[: (n - 3)] + "..."
+    return x

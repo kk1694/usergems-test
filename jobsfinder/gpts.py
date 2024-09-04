@@ -40,6 +40,12 @@ class JobsClassification(BaseModel):
     titles: Optional[list[str]] = None
 
 
+class SalesRoles(BaseModel):
+    qualified: bool
+    best_roles: list[str]
+    email_line: Optional[str]
+
+
 async def valid_website(content) -> WebsiteClassification:
     _system_msg = """
 
@@ -323,3 +329,25 @@ async def follow_scrape(base_url: str, md):
         }
     except Exception as e:
         return {"status": "Error", "history": [base_url], "error": str(e), "titles": []}
+
+
+# Note: untested function, out of time
+async def has_sales_roles(content) -> SalesRoles:
+    _system_msg = """
+You're an AI sales qualifier and email line generator.
+
+I'm going to give you a list of roles the company is hiring for. You need to determine if the company is hiring any sales/marketing roles (this involves sales, BD, marketing, growth, etc.). If they do, that qualifies the company.
+
+If the company is qualified, I want you to extract the best roles that are sales/marketing related. If there are no such roles, leave it empty. If there are multiple roles, select the best 2. The more senior the role, the better.
+
+Finally, I want you to write a first line for a cold email. This should say "I saw you're hiring for [role1] and [role2]." if there are 2 roles, and "I saw you're hiring for [role1]." if there is only 1 role. If there are no roles, leave empty.
+For this line:
+- [role1] and [role2] should be the roles you selected, but put in a conversational format. I.e. "Sales Manager" -> "a sales manager"
+
+Respond with the following output:
+- qualified: true/false based on whether they are hiring for sales/marketing
+- best_roles: the two best roles, if none, leave empty
+- email_line: the email line. If none, leave null
+"""
+
+    return await simple_gpt(_system_msg, content, SalesRoles)
