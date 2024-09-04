@@ -48,6 +48,8 @@ def enrich_md():
     )
     df["md_length"] = df.md.apply(lambda x: None if x is None else len(x))
 
+    del df["homepage_content"]
+
     df.to_csv(SAVEFILE, index=False)
 
     print("Data saved.")

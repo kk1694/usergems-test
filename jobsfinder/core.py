@@ -4,11 +4,15 @@ from pathlib import Path
 
 import tqdm.asyncio
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from markdownify import markdownify
 from openai import AsyncClient
 from playwright.async_api import async_playwright
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+PROJECT_DIR = Path(__file__).parent.parent
+DATA_DIR = PROJECT_DIR / "data"
+
+load_dotenv(PROJECT_DIR / ".env")
 
 
 async def limit_parallel(tasks, n=5):
@@ -60,7 +64,7 @@ async def scrape_url(url):
 
 
 def _init_openai() -> AsyncClient:
-    return AsyncClient
+    return AsyncClient()
 
 
 async def simple_gpt(system_msg, user_msg, schema, temperature=0):
@@ -76,7 +80,6 @@ async def simple_gpt(system_msg, user_msg, schema, temperature=0):
                 response_format=schema,
                 temperature=temperature,
             )
-            print(completion.usage.total_tokens)
             return completion.choices[0].message.parsed
         except Exception as err:
             print(err)
