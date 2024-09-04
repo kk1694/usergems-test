@@ -13,6 +13,8 @@ PROJECT_DIR = Path(__file__).parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 TEMP_DIR = PROJECT_DIR / ".temp"
 
+TEMP_DIR.mkdir(exist_ok=True)
+
 
 load_dotenv(PROJECT_DIR / ".env")
 
@@ -119,3 +121,10 @@ def html2md(html: str | None):
     except Exception as e:
         print(e)
         return None
+
+
+def limit_string(x: str, n=100) -> str:
+    if n < 3:
+        raise ValueError("n must be at least 3")
+    if len(x) > n:
+        return x[: (n - 3)] + "..."
