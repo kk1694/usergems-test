@@ -32,7 +32,7 @@ def enrich_md():
             continue
 
         try:
-            md = html2md(row["homepage_content"])
+            md = html2md(row["homepage_content"]).strip()
 
             if not md or len(md) < 100:
                 raise Exception("No content")
@@ -42,6 +42,12 @@ def enrich_md():
         except Exception as e:
             print(e)
             df.loc[i, "md_status"] = "Failed"
+
+    print(f"converted to markdown, length: {len(df)}")
+
+    df = df[df.md_status == "Success"].reset_index(drop=True)
+
+    print(f"filtered to success, length: {len(df)}")
 
     df["html_length"] = df.homepage_content.apply(
         lambda x: None if x is None else len(x)

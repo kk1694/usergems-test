@@ -11,6 +11,8 @@ from playwright.async_api import async_playwright
 
 PROJECT_DIR = Path(__file__).parent.parent
 DATA_DIR = PROJECT_DIR / "data"
+TEMP_DIR = PROJECT_DIR / ".temp"
+
 
 load_dotenv(PROJECT_DIR / ".env")
 

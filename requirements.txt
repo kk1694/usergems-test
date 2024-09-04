@@ -10,10 +10,12 @@ attrs==24.2.0
 babel==2.16.0
 beautifulsoup4==4.12.3
 bleach==6.1.0
+bs4==0.0.2
 certifi==2024.8.30
 cffi==1.17.0
 charset-normalizer==3.3.2
 comm==0.2.2
+DateTime==5.5
 debugpy==1.8.5
 decorator==5.1.1
 defusedxml==0.7.1
@@ -26,6 +28,7 @@ h11==0.14.0
 httpcore==1.0.5
 httpx==0.27.2
 idna==3.8
+iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.27.0
 ipython-genutils==0.2.0
@@ -34,7 +37,7 @@ isoduration==20.11.0
 jedi==0.19.1
 Jinja2==3.1.4
 jiter==0.5.0
--e git+ssh://git@github.com/kk1694/usergems-test.git@e6eeb14ba7fc33ea9aada9adbd212f6add854e1f#egg=jobsfinder
+-e git+ssh://git@github.com/kk1694/usergems-test.git@92dd6d9a63fafe6f7ca1acbe372742d17a538e1f#egg=jobsfinder
 json5==0.9.25
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -73,6 +76,7 @@ parso==0.8.4
 pexpect==4.9.0
 platformdirs==4.2.2
 playwright==1.46.0
+pluggy==1.5.0
 prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 psutil==6.0.0
@@ -83,7 +87,10 @@ pydantic==2.8.2
 pydantic_core==2.20.1
 pyee==11.1.0
 Pygments==2.18.0
+pytest==8.3.2
+pytest-asyncio==0.24.0
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 python-json-logger==2.0.7
 pytz==2024.1
 PyYAML==6.0.2
@@ -114,3 +121,4 @@ webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
 widgetsnbextension==4.0.13
+zope.interface==7.0.3
