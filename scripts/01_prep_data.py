@@ -5,6 +5,9 @@ import pandas as pd
 
 from jobsfinder.core import DATA_DIR, limit_parallel, scrape_url
 
+SAVEFILE = DATA_DIR / "01_subset_enriched.csv"
+LIMITED_SAVEFILE = DATA_DIR / "01_subset_enriched_limited.csv"
+
 
 def _parse_single_quote_json(json_str):
     json_str_fixed = json_str.replace("'", '"').replace("None", "null")
@@ -42,11 +45,19 @@ def subset_data():
     return df[["CompanyName", "Website"]].reset_index(drop=True)
 
 
+def get_data():
+    if SAVEFILE.exists():
+        print("There is already a save file, loading that")
+        return pd.read_csv(SAVEFILE)
+    return subset_data()
+
+
 async def enrich_homepage_scrapes():
     """
     Scrape homepages of companies
     """
-    df = subset_data()
+    df = get_data()
+
     print("Data loaded")
 
     df["scrape_status"] = "Not Started"
@@ -66,13 +77,25 @@ async def enrich_homepage_scrapes():
         df.loc[i, "homepage_content"] = content
 
         if i % 25 == 0:
-            df.to_csv(DATA_DIR / "01_subset_enriched.csv", index=False)
+            df.to_csv(SAVEFILE, index=False)
 
     await limit_parallel(
         [scrape_homepage(i, row["Website"]) for i, row in df.iterrows()], n=10
     )
 
     print("Job finished.")
+
+    df.to_csv(SAVEFILE, index=False)
+
+    print("Data saved.")
+
+    # Save git friendly version
+    df["homepage_content"] = df["homepage_content"].apply(
+        lambda x: x[:100] if x is not None else None
+    )
+    df.to_csv(LIMITED_SAVEFILE, index=False)
+
+    print("Git friendly data saved.")
 
 
 if __name__ == "__main__":
