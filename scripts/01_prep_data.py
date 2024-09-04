@@ -91,7 +91,7 @@ async def enrich_homepage_scrapes():
 
     # Save git friendly version
     df["homepage_content"] = df["homepage_content"].apply(
-        lambda x: x[:100] if x is not None else None
+        lambda x: str(x)[:100] if x is not None else None
     )
     df.to_csv(LIMITED_SAVEFILE, index=False)
 
