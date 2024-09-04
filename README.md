@@ -1,2 +1,4 @@
 # usergems-test
-Usergems test
+
+
+Check out `nbs/index.ipynb`!

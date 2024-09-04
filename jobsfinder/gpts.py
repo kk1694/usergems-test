@@ -261,10 +261,13 @@ async def follow_links(base_url: str, next_link: str, history: list[str]):
 
     print("Starting next link", _next_link)
 
-    # this was the buggy! don't have time to reprocess everything unfortunately
-    if history and _next_link in history[1:]:
+    # this was buggy, so disabled it for now
+    if False:
         print(history)
         print(_next_link)
+        import pdb
+
+        pdb.set_trace()
         return {
             "status": "Loop detected",
             "history": history,
