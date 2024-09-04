@@ -36,7 +36,6 @@ isoduration==20.11.0
 jedi==0.19.1
 Jinja2==3.1.4
 jiter==0.5.0
--e git+ssh://git@github.com/kk1694/usergems-test.git@92dd6d9a63fafe6f7ca1acbe372742d17a538e1f#egg=jobsfinder
 json5==0.9.25
 jsonpointer==3.0.0
 jsonschema==4.23.0
