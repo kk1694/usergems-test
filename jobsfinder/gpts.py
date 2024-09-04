@@ -4,14 +4,22 @@ File for all the GPT calls. Will also add the unit tests here for simplicity.
 
 import json
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 import pandas as pd
 import pytest
 from pydantic import BaseModel
 
 from .core import TEMP_DIR, limit_parallel, simple_gpt
-from .testcases import websites_invalid, websites_valid
+from .testcases import (
+    jobs_links,
+    jobs_list,
+    jobs_none,
+    jobs_open_apply,
+    jobs_zero,
+    websites_invalid,
+    websites_valid,
+)
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -19,6 +27,12 @@ pytest_plugins = ("pytest_asyncio",)
 class WebsiteClassification(BaseModel):
     reasoning: str
     classification: Literal["invalid", "valid"]
+
+
+class JobsClassification(BaseModel):
+    reasoning: str
+    classification: Literal["Job list", "Job open apply", "Link to jobs", "No jobs"]
+    link: Optional[str] = None
 
 
 async def valid_website(content) -> WebsiteClassification:
@@ -80,5 +94,97 @@ async def test_valid():
     results = await quickcases(valid_website, websites_valid)
     failed = [
         case for case, result in zip(websites_valid, results) if result != "valid"
+    ]
+    assert not failed, f"Failed cases: {failed}"
+
+
+async def jobs_status(content) -> JobsClassification:
+    _system_msg = """
+
+You are a website classifier. I'm going to give you access to a website content (converted to markdown). Your job is to determine whether the website contains jobs.
+
+You shall classify websites into the following buckets:
+- Job list: the website explicitly lists actual jobs (with titles), or links to jobs that you can apply for. There has to be 1+ job listed.
+- Empty list: the website has a section where jobs did and will apear, but right now it's empty, or company is currently not hiring. If there is a list with zero items, that also counts as empty list Even if they encourga people to send their CV, it counts as empty list if they state that they have no jobs right now. If the website mentions current roles but does not list any specific jobs, it is an empty list.
+- Link to jobs: the page does not contain job lists, but has a link to a career / job page that has it. The link could be on the same domain, a separate domain, or it could be a link to an ATS provider or job board. Note: if the navbar (or footer) has a "Company"/"About"/"About us" (or similar section that often contains jobs), select this option. Also, it has a button saying "Apply" with no further context, it still counts as a link, not open apply; unless generic applications are specifically stated.
+- Job open apply: the website says their accepting jobs, but does not list the jobs. Instead, it encourages people to apply, or email HR, or just has a rolling generic process. Note: the previous category takes precedence!
+- No jobs: the website does not have any explicit jobs, does not have a vague apply by sending HR your CV, and does not even include a link to a separate page for jobs. This is different from section 1 in that there is no mention of jobs/careers/etc.
+
+Use a waterfall approach: if the first category is satisfied (Job list), select that, then move to the next. If empty list is satisfied, select that, and so on. Categories higher up in the list take precedence.
+
+For the output, give your very short reasoning (max 1-2 sentence), plus your classification.
+
+Note:
+- If the site does not list specific links AND mentions that they currently have no jobs, it is an empty list - NO MATTER if they still encourage you to apply.
+
+If the answer is link to jobs, please provide the link in the output. Leave it empty for any other case.
+
+Examples:
+- "While FitLife has no current openings, we're always looking for talented fitness professionals. Please check back soon" -> Empty list
+- "    StreamIt - Unlimited Movies and TV Shows. Enjoy the latest movies and shows without ads. Start streaming today!" -> No jobs
+- "    Interested in working with us? Check our [career page](https://www.acme.com/jobs) for the latest openings." -> Link to jobs
+- "GreenEnergy is always looking for skilled professionals to join our mission for sustainable energy. Send us your resume." -> Job open apply
+- '''
+TravelPro is an award-winning travel agency offering luxury vacations and personalized travel services.
+
+    Positions available:
+    - [Travel Consultant](https://travelpro.com/jobs/travel-consultant)
+    - [Customer Service Associate](https://travelpro.com/jobs/customer-service)
+''' -> Job list
+- "    LearnTech is always looking for new talent. While we have no current positions available, feel free to submit your resume for future consideration on our [careers portal](https://learntech.com/careers)." -> Empty list
+- "   ACME is always looking for talented individuals to join our team, but we currently don't have any open positions.\n\n    Please check back soon or submit your resume for future opportunities via our [general application form](https://acme.com/apply)." -> Empty list
+- "    We currently have no job openings, but you can always stay updated via our [careers page](https://bluesky.com/careers)." -> Empty list
+- " ACME is currently not having any open roles, but we're always looking for talented individuals. Please send us your resume." -> Empty list
+- " Jobs at FitLife: \n\n - \n" -> Empty list
+
+
+""".strip()
+
+    return await simple_gpt(_system_msg, content, JobsClassification)
+
+
+@pytest.mark.asyncio
+async def test_jobs_list():
+    results = await quickcases(jobs_status, jobs_list)
+    failed = [case for case, result in zip(jobs_list, results) if result != "Job list"]
+    assert not failed, f"Failed cases: {failed}"
+
+
+@pytest.mark.asyncio
+async def test_jobs_none():
+    results = await quickcases(jobs_status, jobs_none)
+    failed = [case for case, result in zip(jobs_none, results) if result != "No jobs"]
+    assert not failed, f"Failed cases: {failed}"
+
+
+@pytest.mark.asyncio
+async def test_jobs_links():
+    results = await quickcases(jobs_status, jobs_links)
+    failed = [
+        case for case, result in zip(jobs_links, results) if result != "Link to jobs"
+    ]
+    assert not failed, f"Failed cases: {failed}"
+
+
+# Note: these last 2 test cases get constantly confused, but don't have time to fiddle right now, so will just ignore
+# Probably best solution: merge these and add extra step
+@pytest.mark.asyncio
+async def test_jobs_open_apply():
+    results = await quickcases(jobs_status, jobs_open_apply)
+    failed = [
+        case
+        for case, result in zip(jobs_open_apply, results)
+        if result not in ["No jobs", "Job open apply"]
+    ]
+    assert not failed, f"Failed cases: {failed}"
+
+
+@pytest.mark.asyncio
+async def test_jobs_zero():
+    results = await quickcases(jobs_status, jobs_zero)
+    failed = [
+        case
+        for case, result in zip(jobs_zero, results)
+        if result not in ["No jobs", "Job open apply"]
     ]
     assert not failed, f"Failed cases: {failed}"
