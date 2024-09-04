@@ -14,7 +14,7 @@ def get_data():
         print("There is already a save file, loading that")
         return pd.read_csv(SAVEFILE)
     df = pd.read_csv(INPUTFILE)
-    assert len(df) > 3000
+    assert len(df) == 2000
     assert all(df.md_status == "Success")
     df["valid_website"] = None
     return df

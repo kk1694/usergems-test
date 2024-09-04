@@ -13,7 +13,7 @@ def get_data():
         return pd.read_csv(SAVEFILE)
     df = pd.read_csv(INPUTFILE)
     df = df[df.scrape_status == "Success"].reset_index(drop=True)
-    assert len(df) > 3000
+    assert len(df) > 2000
     df["md_status"] = "Not Started"
     df["md"] = None
     return df

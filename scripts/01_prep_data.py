@@ -42,6 +42,9 @@ def subset_data():
     df = df[df["country"] == "united states"]
     assert len(df) == 4734
 
+    # remove duplicates (lol, added after the fact, forgot to check)
+    df = df[~df.Website.duplicated()]
+
     return df[["CompanyName", "Website"]].reset_index(drop=True)
 
 
