@@ -37,7 +37,7 @@ async def enrich_md():
             df.to_csv(SAVEFILE, index=False)
 
     await limit_parallel(
-        [_is_valid(i, row["Website"]) for i, row in df.iterrows()], n=10
+        [_is_valid(i, row["Website"]) for i, row in df.iterrows()], n=25
     )
 
     print("Job finished.")

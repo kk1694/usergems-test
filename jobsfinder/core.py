@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 from pathlib import Path
 
@@ -12,11 +13,26 @@ from playwright.async_api import async_playwright
 PROJECT_DIR = Path(__file__).parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 TEMP_DIR = PROJECT_DIR / ".temp"
+GPT_LOG = PROJECT_DIR / ".gpts.json"
+
+INPUT_PRICE = 0.150 / 1000000
+OUTPUT_PRICE = 0.075 / 1000000
 
 TEMP_DIR.mkdir(exist_ok=True)
 
 
 load_dotenv(PROJECT_DIR / ".env")
+
+
+def cost_so_far():
+    with open(GPT_LOG, "r") as f:
+        return sum(
+            [
+                json.loads(line)["cost"]
+                for line in f.readlines()
+                if "cost" in json.loads(line)
+            ]
+        )
 
 
 async def limit_parallel(tasks, n=5):
@@ -84,6 +100,20 @@ async def simple_gpt(system_msg, user_msg, schema, temperature=0):
                 response_format=schema,
                 temperature=temperature,
             )
+            with open(GPT_LOG, "a") as f:
+                f.write(
+                    json.dumps(
+                        {
+                            "system_msg": system_msg,
+                            "user_msg": user_msg,
+                            "trial": i,
+                            "cost": completion.usage.completion_tokens * OUTPUT_PRICE
+                            + completion.usage.prompt_tokens * INPUT_PRICE,
+                        }
+                    )
+                    + "\n"
+                )
+
             return completion.choices[0].message.parsed
         except Exception as err:
             print(err)

@@ -64,7 +64,7 @@ async def quickcases(process_func, cases):
     return classification
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_invalid():
     results = await quickcases(valid_website, websites_invalid)
@@ -74,6 +74,7 @@ async def test_invalid():
     assert not failed, f"Failed cases: {failed}"
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_valid():
     results = await quickcases(valid_website, websites_valid)
