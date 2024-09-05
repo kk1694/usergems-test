@@ -335,7 +335,7 @@ def home():
         Div(
             H1("Usergems Qualifier", cls="text-4xl  text-slate-800"),
             url_w_quickstart,
-            cls="max-w-xl flex flex-col gap-y-8 w-full h-full items-center justify-center text-slate-600",
+            cls="max-w-xl flex flex-col gap-y-8 w-full h-full items-center justify-center text-slate-600 p-4",
         ),
         cls="h-screen w-screen flex items-center justify-center overflow-y-auto",
     )
