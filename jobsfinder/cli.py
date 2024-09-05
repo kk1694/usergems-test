@@ -12,7 +12,7 @@ Hey [firstName],
 
 {x} Businesss must be going good!
 
-Given your trajectory, I assume your doing everything to increase conversion. That's also the reason we've built User-Gems. You can automatically capture buying signals from your prospect & put your pipeline on auto-pilot.
+Given your trajectory, I assume your doing everything to increase conversion. That's also the reason we've built Usergems. You can automatically capture buying signals from your prospect & put your pipeline on auto-pilot.
 
 Let me know if that's of interest.
 

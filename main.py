@@ -84,7 +84,7 @@ Hey [firstName],
 
 {x} Businesss must be going good!
 
-Given your trajectory, I assume your doing everything to increase conversion. That's also the reason we've built User-Gems. You can automatically capture buying signals from your prospect & put your pipeline on auto-pilot.
+Given your trajectory, I assume your doing everything to increase conversion. That's also the reason we've built Usergems. You can automatically capture buying signals from your prospect & put your pipeline on auto-pilot.
 
 Let me know if that's of interest.
 
@@ -333,7 +333,7 @@ def profile():
 def home():
     return Title("UG Qualifier"), Main(
         Div(
-            H1("User-Gems Qualifier", cls="text-4xl  text-slate-800"),
+            H1("Usergems Qualifier", cls="text-4xl  text-slate-800"),
             url_w_quickstart,
             cls="max-w-xl flex flex-col gap-y-8 w-full h-full items-center justify-center text-slate-600",
         ),
